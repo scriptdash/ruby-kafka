@@ -31,6 +31,7 @@ module Kafka
 
       def start(registry = ::Prometheus::Client.registry)
         @registry = registry
+        CompressionSubscriber.attach_to 'compressor.kafka'
         ConnectionSubscriber.attach_to 'connection.kafka'
         ConsumerSubscriber.attach_to 'consumer.kafka'
         ProducerSubscriber.attach_to 'producer.kafka'
@@ -63,6 +64,22 @@ module Kafka
         @api_request_size.observe(request_size, labels: key)
         @api_response_size.observe(response_size, labels: key)
         @api_errors.increment(labels: key) if event.payload.key?(:exception)
+      end
+    end
+
+    class CompressionSubscriber < ActiveSupport::Subscriber
+      def initialize
+        super
+        @compressed_message_count = Prometheus.registry.counter(:compressed_message_count, docstring: 'Compressed Messages count')
+        @compressed_bytesize = Prometheus.registry.gauge(:compressed_bytesize, docstring: 'Compressed Messages bytesize')
+      end
+
+      def compress(event)
+        message_count = event.payload.fetch(:message_count)
+        compressed_bytesize = event.payload.fetch(:compressed_bytesize)
+
+        @compressed_bytesize.set(compressed_bytesize)
+        @compressed_message_count.increment(by: message_count)
       end
     end
 
