@@ -8,10 +8,9 @@ module Kafka
     class AwsMskIam
       AWS_MSK_IAM = "AWS_MSK_IAM"
 
-      def initialize(host:, aws_region:, access_key_id:, secret_key_id:, logger:)
+      def initialize(aws_region:, access_key_id:, secret_key_id:, logger:)
         @semaphore = Mutex.new
 
-        @host = host
         @aws_region = aws_region
         @access_key_id = access_key_id
         @secret_key_id = secret_key_id
@@ -50,11 +49,11 @@ module Kafka
 
       private
 
-      def authentication_payload
+      def authentication_payload(host: host)
         now = Time.now
         {
           'version': "2020_10_22",
-          'host': @host,
+          'host': host,
           'user-agent': "ruby-kafka",
           'action': "kafka-cluster:Connect",
           'x-amz-algorithm': "AWS4-HMAC-SHA256",
@@ -62,15 +61,15 @@ module Kafka
           'x-amz-date': now.strftime("%Y%m%dT%H%M%SZ"),
           'x-amz-signedheaders': "host",
           'x-amz-expires': "900",
-          'x-amz-signature': signature
+          'x-amz-signature': signature(host: host)
         }
       end
 
-      def canonical_request
+      def canonical_request(host:)
         "GET\n" +
         "/\n" +
         canonical_query_string + "\n"+
-        canonical_headers + "\n"+
+        canonical_headers(host: host) + "\n"+
         signed_headers + "\n"
         hashed_payload
       end
@@ -86,8 +85,8 @@ module Kafka
         CGI.escape("X-Amz-SignedHeaders") + "=" + CGI.escape("host")
       end
 
-      def canonical_headers
-        "host" + ":" + @host + "\n"
+      def canonical_headers(host:)
+        "host" + ":" + host + "\n"
       end
 
       def signed_headers
@@ -98,22 +97,22 @@ module Kafka
         bin_to_hex(digest.digest(""))
       end
 
-      def string_to_sign
+      def string_to_sign(host:)
         now = Time.now
         "AWS4-HMAC-SHA256" + "\n" +
         now.strftime("%Y%m%dT%H%M%SZ") + "\n" +
         @aws_region + "/kafka-cluster" + "\n" +
-        bin_to_hex(digest.digest(canonical_request))
+        bin_to_hex(digest.digest(canonical_request(host: host)))
       end
 
-      def signature
+      def signature(host:)
         now = Time.now
 
         date_key = OpenSSL::HMAC.digest("SHA256", "AWS4" + @secret_key_id, now.strftime("%Y%m%d"))
         date_region_key = OpenSSL::HMAC.digest("SHA256", date_key, @aws_region)
         date_region_service_key = OpenSSL::HMAC.digest("SHA256", date_region_key, "kafka-cluster")
         signing_key = OpenSSL::HMAC.digest("SHA256", signing_key, "aws4_request")
-        signature = bin_to_hex(OpenSSL::HMAC.digest("SHA256", signing_key, string_to_sign))
+        signature = bin_to_hex(OpenSSL::HMAC.digest("SHA256", signing_key, string_to_sign(host: host)))
       end
 
       def bin_to_hex(s)
