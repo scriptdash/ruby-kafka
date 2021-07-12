@@ -14,7 +14,7 @@ module Kafka
                    sasl_aws_msk_host:,
                    sasl_aws_msk_iam_access_key_id:,
                    sasl_aws_msk_iam_secret_key_id:,
-                   sasl_aws_msk_iam_aws_region:,
+                   sasl_aws_msk_iam_aws_region:
                   )
       @logger = TaggedLogger.new(logger)
 
