@@ -11,7 +11,6 @@ module Kafka
                    sasl_plain_authzid:, sasl_plain_username:, sasl_plain_password:,
                    sasl_scram_username:, sasl_scram_password:, sasl_scram_mechanism:,
                    sasl_oauth_token_provider:,
-                   sasl_aws_msk_host:,
                    sasl_aws_msk_iam_access_key_id:,
                    sasl_aws_msk_iam_secret_key_id:,
                    sasl_aws_msk_iam_aws_region:
