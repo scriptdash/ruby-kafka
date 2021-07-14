@@ -4,6 +4,7 @@ require 'kafka/sasl/plain'
 require 'kafka/sasl/gssapi'
 require 'kafka/sasl/scram'
 require 'kafka/sasl/oauth'
+require 'kafka/sasl/awsmskiam'
 
 module Kafka
   class SaslAuthenticator
@@ -40,7 +41,7 @@ module Kafka
       @aws_msk_iam = Sasl::AwsMskIam.new(
         access_key_id: sasl_aws_msk_iam_access_key_id,
         secret_key_id: sasl_aws_msk_iam_secret_key_id,
-        aws_region: sasl_aws_msk_iam_aws_region_key_id,
+        aws_region: sasl_aws_msk_iam_aws_region,
         logger: @logger,
       )
 
@@ -61,6 +62,8 @@ module Kafka
 
       ident = @mechanism.ident
       response = connection.send_request(Kafka::Protocol::SaslHandshakeRequest.new(ident))
+      
+      print response.inspect
 
       unless response.error_code == 0 && response.enabled_mechanisms.include?(ident)
         raise Kafka::Error, "#{ident} is not supported."
