@@ -30,8 +30,10 @@ module Kafka
         @logger.debug "Authenticating #{@access_key_id} with SASL #{AWS_MSK_IAM}"
 
         host_without_port = host.split(':', -1).first
+
         msg = authentication_payload(host: host_without_port)
-        @logger.debug "Sending first client SASL AWS_MSK_IAM message: #{msg}"
+        @logger.debug "Sending first client SASL AWS_MSK_IAM message:"
+        @logger.debug msg
         encoder.write_bytes(msg)
 
         begin
